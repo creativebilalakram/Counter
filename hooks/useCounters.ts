@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Counter, LogEntry, CounterSession } from '../types';
 
-const STORAGE_KEY = 'ethereal_tally_counters';
+const STORAGE_KEY = 'ethereal_tally_v2';
 
 export const useCounters = () => {
   const [counters, setCounters] = useState<Counter[]>(() => {
@@ -17,7 +17,7 @@ export const useCounters = () => {
   const addCounter = useCallback((counter: Partial<Counter>) => {
     const newCounter: Counter = {
       id: crypto.randomUUID(),
-      name: counter.name || 'Untitled Counter',
+      name: counter.name || 'Untitled Tally',
       count: counter.count || 0,
       goal: counter.goal,
       color: counter.color || '#0F172A',
@@ -37,18 +37,28 @@ export const useCounters = () => {
     setCounters(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
   }, []);
 
+  const saveSession = useCallback((id: string, session: CounterSession) => {
+    setCounters(prev => prev.map(c => {
+      if (c.id === id) {
+        // Only save sessions longer than 1 second to avoid clutter
+        if (session.endTime && (session.endTime - session.startTime) < 1000) return c;
+        return {
+          ...c,
+          sessions: [session, ...(c.sessions || [])].slice(0, 100)
+        };
+      }
+      return c;
+    }));
+  }, []);
+
   const deleteCounter = useCallback((id: string) => {
     setCounters(prev => prev.filter(c => c.id !== id));
   }, []);
 
   const clearAllData = useCallback(() => {
-    if (confirm("Are you absolutely sure? This will delete all counters and history forever.")) {
+    if (confirm("Reset everything? This cannot be undone.")) {
       setCounters([]);
     }
-  }, []);
-
-  const archiveCounter = useCallback((id: string) => {
-    setCounters(prev => prev.map(c => c.id === id ? { ...c, isArchived: true } : c));
   }, []);
 
   const resetCounter = useCallback((id: string) => {
@@ -73,16 +83,15 @@ export const useCounters = () => {
     setCounters(prev => prev.map(c => {
       if (c.id === id) {
         const newValue = c.count + amount;
-        const log: LogEntry = {
-          id: crypto.randomUUID(),
-          timestamp: Date.now(),
-          increment: amount,
-          newValue
-        };
         return {
           ...c,
           count: newValue,
-          logs: [log, ...c.logs].slice(0, 1000)
+          logs: [{
+            id: crypto.randomUUID(),
+            timestamp: Date.now(),
+            increment: amount,
+            newValue
+          }, ...c.logs].slice(0, 500)
         };
       }
       return c;
@@ -93,16 +102,15 @@ export const useCounters = () => {
     setCounters(prev => prev.map(c => {
       if (c.id === id) {
         const newValue = Math.max(0, c.count - amount);
-        const log: LogEntry = {
-          id: crypto.randomUUID(),
-          timestamp: Date.now(),
-          increment: -amount,
-          newValue
-        };
         return {
           ...c,
           count: newValue,
-          logs: [log, ...c.logs].slice(0, 1000)
+          logs: [{
+            id: crypto.randomUUID(),
+            timestamp: Date.now(),
+            increment: -amount,
+            newValue
+          }, ...c.logs].slice(0, 500)
         };
       }
       return c;
@@ -115,9 +123,9 @@ export const useCounters = () => {
     updateCounter,
     deleteCounter,
     clearAllData,
-    archiveCounter,
     resetCounter,
     incrementCounter,
     decrementCounter,
+    saveSession
   };
 };
