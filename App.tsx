@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { 
   LayoutDashboard, 
   List, 
@@ -13,7 +13,9 @@ import {
   Monitor,
   Trash2,
   Download,
-  Info
+  Upload,
+  Info,
+  CheckCircle2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HashRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
@@ -60,15 +62,36 @@ const Navigation = () => {
   );
 };
 
-const SettingsView = ({ onClearData, counters }: { onClearData: () => void, counters: Counter[] }) => {
+const SettingsView = ({ onClearData, counters, onImportData }: { onClearData: () => void, counters: Counter[], onImportData: (data: string) => boolean }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
   const exportData = () => {
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(counters));
     const downloadAnchorNode = document.createElement('a');
     downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", "ethereal_tally_backup.json");
+    downloadAnchorNode.setAttribute("download", `ethereal_tally_${new Date().toISOString().split('T')[0]}.json`);
     document.body.appendChild(downloadAnchorNode);
     downloadAnchorNode.click();
     downloadAnchorNode.remove();
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const content = e.target?.result as string;
+        const success = onImportData(content);
+        setImportStatus(success ? 'success' : 'error');
+        setTimeout(() => setImportStatus('idle'), 3000);
+      };
+      reader.readAsText(file);
+    }
   };
 
   return (
@@ -77,9 +100,9 @@ const SettingsView = ({ onClearData, counters }: { onClearData: () => void, coun
       animate={{ opacity: 1, y: 0 }}
       className="max-w-2xl mx-auto space-y-8"
     >
-      <div className="mb-8">
+      <div className="mb-8 px-2">
         <h2 className="text-3xl font-bold text-slate-900 dark:text-white">Settings</h2>
-        <p className="text-slate-500 dark:text-slate-400">Manage your data and preferences.</p>
+        <p className="text-slate-500 dark:text-slate-400">Manage your data and cloud preferences.</p>
       </div>
 
       <div className="glass rounded-[32px] overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
@@ -93,10 +116,37 @@ const SettingsView = ({ onClearData, counters }: { onClearData: () => void, coun
             </div>
             <div>
               <p className="font-bold text-slate-900 dark:text-white">Export Data</p>
-              <p className="text-sm text-slate-400 dark:text-slate-500">Download a backup of your counters.</p>
+              <p className="text-sm text-slate-400 dark:text-slate-500">Download a backup of all counters.</p>
             </div>
           </div>
         </button>
+
+        <div className="relative">
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            accept=".json" 
+            onChange={handleFileChange} 
+          />
+          <button 
+            onClick={handleImportClick}
+            className="w-full px-8 py-6 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group"
+          >
+            <div className="flex items-center gap-4 text-left">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors ${
+                importStatus === 'success' ? 'bg-green-50 text-green-500' : 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-500'
+              }`}>
+                {importStatus === 'success' ? <CheckCircle2 size={22} /> : <Upload size={22} />}
+              </div>
+              <div>
+                <p className="font-bold text-slate-900 dark:text-white">Import Data</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500">Restore your counters from a backup file.</p>
+              </div>
+            </div>
+            {importStatus === 'error' && <span className="text-red-500 text-xs font-bold uppercase">Invalid File</span>}
+          </button>
+        </div>
 
         <button 
           onClick={onClearData}
@@ -118,8 +168,8 @@ const SettingsView = ({ onClearData, counters }: { onClearData: () => void, coun
             <Info size={22} />
           </div>
           <div>
-            <p className="font-bold text-slate-900 dark:text-white text-sm">Version 1.2.0 (Premium)</p>
-            <p className="text-xs text-slate-400 dark:text-slate-500">Build 2024.11.24.ethereal</p>
+            <p className="font-bold text-slate-900 dark:text-white text-sm">Version 1.2.5 (Pro)</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500">Build 2024.11.25.premium</p>
           </div>
         </div>
       </div>
@@ -190,7 +240,10 @@ const AppContent = () => {
     decrementCounter,
     deleteCounter,
     clearAllData,
-    resetCounter
+    importData,
+    resetCounter,
+    startSession,
+    endSession
   } = useCounters();
   
   const [isCommandOpen, setIsCommandOpen] = useState(false);
@@ -231,9 +284,9 @@ const AppContent = () => {
         <Routes>
           <Route path="/" element={<Dashboard counters={counters} />} />
           <Route path="/counters" element={<CounterList counters={counters} onIncrement={incrementCounter} onDecrement={decrementCounter} />} />
-          <Route path="/counter/:id" element={<CounterDetail counters={counters} onIncrement={incrementCounter} onDecrement={decrementCounter} onReset={resetCounter} onUpdate={updateCounter} onDelete={deleteCounter} />} />
+          <Route path="/counter/:id" element={<CounterDetail counters={counters} onIncrement={incrementCounter} onDecrement={decrementCounter} onReset={resetCounter} onUpdate={updateCounter} onDelete={deleteCounter} onStartSession={startSession} onEndSession={endSession} />} />
           <Route path="/history" element={<HistoryView counters={counters} />} />
-          <Route path="/settings" element={<SettingsView counters={counters} onClearData={clearAllData} />} />
+          <Route path="/settings" element={<SettingsView counters={counters} onClearData={clearAllData} onImportData={importData} />} />
         </Routes>
       </AnimatePresence>
 

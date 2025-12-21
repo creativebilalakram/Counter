@@ -13,6 +13,7 @@ export interface CounterSession {
   startValue: number;
   endValue?: number;
   notes?: string;
+  duration?: number; // in seconds
 }
 
 export interface Counter {
@@ -28,6 +29,7 @@ export interface Counter {
   logs: LogEntry[];
   sessions: CounterSession[];
   order: number;
+  activeSessionId?: string;
 }
 
 export interface ThemeColors {

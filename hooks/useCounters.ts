@@ -47,8 +47,18 @@ export const useCounters = () => {
     }
   }, []);
 
-  const archiveCounter = useCallback((id: string) => {
-    setCounters(prev => prev.map(c => c.id === id ? { ...c, isArchived: true } : c));
+  const importData = useCallback((jsonData: string) => {
+    try {
+      const data = JSON.parse(jsonData);
+      if (Array.isArray(data)) {
+        setCounters(data);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.error("Failed to import data", e);
+      return false;
+    }
   }, []);
 
   const resetCounter = useCallback((id: string) => {
@@ -109,15 +119,58 @@ export const useCounters = () => {
     }));
   }, []);
 
+  const startSession = useCallback((id: string) => {
+    const sessionId = crypto.randomUUID();
+    setCounters(prev => prev.map(c => {
+      if (c.id === id) {
+        const session: CounterSession = {
+          id: sessionId,
+          startTime: Date.now(),
+          startValue: c.count
+        };
+        return {
+          ...c,
+          activeSessionId: sessionId,
+          sessions: [session, ...c.sessions]
+        };
+      }
+      return c;
+    }));
+  }, []);
+
+  const endSession = useCallback((id: string) => {
+    setCounters(prev => prev.map(c => {
+      if (c.id === id && c.activeSessionId) {
+        return {
+          ...c,
+          activeSessionId: undefined,
+          sessions: c.sessions.map(s => 
+            s.id === c.activeSessionId 
+              ? { 
+                  ...s, 
+                  endTime: Date.now(), 
+                  endValue: c.count, 
+                  duration: Math.floor((Date.now() - s.startTime) / 1000) 
+                } 
+              : s
+          )
+        };
+      }
+      return c;
+    }));
+  }, []);
+
   return {
     counters,
     addCounter,
     updateCounter,
     deleteCounter,
     clearAllData,
-    archiveCounter,
+    importData,
     resetCounter,
     incrementCounter,
     decrementCounter,
+    startSession,
+    endSession
   };
 };
