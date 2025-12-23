@@ -2,12 +2,37 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Counter, LogEntry, CounterSession } from '../types';
 
-const STORAGE_KEY = 'ethereal_tally_counters';
+const STORAGE_KEY = 'ethereal_tally_counters_v2';
+
+// Safe ID generator that doesn't rely on secure context crypto.randomUUID
+const generateId = () => {
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
+    try {
+      return window.crypto.randomUUID();
+    } catch (e) {
+      // Fallback if randomUUID fails for some reason
+    }
+  }
+  return Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+};
 
 export const useCounters = () => {
   const [counters, setCounters] = useState<Counter[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      // Data hardening: Ensure every counter has the necessary arrays
+      return Array.isArray(parsed) ? parsed.map(c => ({
+        ...c,
+        logs: c.logs || [],
+        sessions: c.sessions || [],
+        count: typeof c.count === 'number' ? c.count : 0
+      })) : [];
+    } catch (e) {
+      console.error("Failed to parse storage", e);
+      return [];
+    }
   });
 
   useEffect(() => {
@@ -16,7 +41,7 @@ export const useCounters = () => {
 
   const addCounter = useCallback((counter: Partial<Counter>) => {
     const newCounter: Counter = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       name: counter.name || 'Untitled Counter',
       count: counter.count || 0,
       goal: counter.goal,
@@ -42,21 +67,22 @@ export const useCounters = () => {
   }, []);
 
   const clearAllData = useCallback(() => {
-    if (confirm("Are you absolutely sure? This will delete all counters and history forever.")) {
-      setCounters([]);
-    }
+    setCounters([]);
   }, []);
 
   const importData = useCallback((jsonData: string) => {
     try {
       const data = JSON.parse(jsonData);
       if (Array.isArray(data)) {
-        setCounters(data);
+        setCounters(data.map(c => ({
+          ...c,
+          logs: c.logs || [],
+          sessions: c.sessions || []
+        })));
         return true;
       }
       return false;
     } catch (e) {
-      console.error("Failed to import data", e);
       return false;
     }
   }, []);
@@ -68,11 +94,11 @@ export const useCounters = () => {
           ...c,
           count: 0,
           logs: [{
-            id: crypto.randomUUID(),
+            id: generateId(),
             timestamp: Date.now(),
             increment: -c.count,
             newValue: 0
-          }, ...c.logs]
+          }, ...(c.logs || [])].slice(0, 1000)
         };
       }
       return c;
@@ -84,7 +110,7 @@ export const useCounters = () => {
       if (c.id === id) {
         const newValue = c.count + amount;
         const log: LogEntry = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           timestamp: Date.now(),
           increment: amount,
           newValue
@@ -92,7 +118,7 @@ export const useCounters = () => {
         return {
           ...c,
           count: newValue,
-          logs: [log, ...c.logs].slice(0, 1000)
+          logs: [log, ...(c.logs || [])].slice(0, 1000)
         };
       }
       return c;
@@ -104,7 +130,7 @@ export const useCounters = () => {
       if (c.id === id) {
         const newValue = Math.max(0, c.count - amount);
         const log: LogEntry = {
-          id: crypto.randomUUID(),
+          id: generateId(),
           timestamp: Date.now(),
           increment: -amount,
           newValue
@@ -112,7 +138,7 @@ export const useCounters = () => {
         return {
           ...c,
           count: newValue,
-          logs: [log, ...c.logs].slice(0, 1000)
+          logs: [log, ...(c.logs || [])].slice(0, 1000)
         };
       }
       return c;
@@ -120,9 +146,10 @@ export const useCounters = () => {
   }, []);
 
   const startSession = useCallback((id: string) => {
-    const sessionId = crypto.randomUUID();
     setCounters(prev => prev.map(c => {
       if (c.id === id) {
+        if (c.activeSessionId) return c;
+        const sessionId = generateId();
         const session: CounterSession = {
           id: sessionId,
           startTime: Date.now(),
@@ -131,7 +158,7 @@ export const useCounters = () => {
         return {
           ...c,
           activeSessionId: sessionId,
-          sessions: [session, ...c.sessions]
+          sessions: [session, ...(c.sessions || [])]
         };
       }
       return c;
@@ -141,19 +168,20 @@ export const useCounters = () => {
   const endSession = useCallback((id: string) => {
     setCounters(prev => prev.map(c => {
       if (c.id === id && c.activeSessionId) {
+        const sessions = (c.sessions || []).map(s => 
+          s.id === c.activeSessionId 
+            ? { 
+                ...s, 
+                endTime: Date.now(), 
+                endValue: c.count, 
+                duration: Math.floor((Date.now() - s.startTime) / 1000) 
+              } 
+            : s
+        );
         return {
           ...c,
           activeSessionId: undefined,
-          sessions: c.sessions.map(s => 
-            s.id === c.activeSessionId 
-              ? { 
-                  ...s, 
-                  endTime: Date.now(), 
-                  endValue: c.count, 
-                  duration: Math.floor((Date.now() - s.startTime) / 1000) 
-                } 
-              : s
-          )
+          sessions
         };
       }
       return c;

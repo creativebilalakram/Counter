@@ -9,7 +9,7 @@ import {
   ChevronRight,
   CirclePlay
 } from 'lucide-react';
-import { Counter } from '../types';
+import { Counter } from '../types.ts';
 import { AreaChart, Area, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface DashboardProps {
@@ -48,19 +48,21 @@ const ActivityRing = ({ progress, color, size = 120, strokeWidth = 12 }: { progr
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-xl font-bold text-slate-900 dark:text-white">{Math.round(progress)}%</span>
+        <span className="text-xl font-bold text-slate-900 dark:text-white">{Math.round(progress || 0)}%</span>
       </div>
     </div>
   );
 };
 
-const Dashboard: React.FC<DashboardProps> = ({ counters }) => {
+const Dashboard: React.FC<DashboardProps> = ({ counters = [] }) => {
   const navigate = useNavigate();
+  
   const stats = useMemo(() => {
-    const totalCounts = counters.reduce((acc, c) => acc + c.count, 0);
+    const totalCounts = (counters || []).reduce((acc, c) => acc + (c.count || 0), 0);
     const today = new Date().setHours(0,0,0,0);
-    const countsToday = counters.reduce((acc, c) => {
-      const todayLogs = c.logs.filter(l => l.timestamp >= today && l.increment > 0);
+    const countsToday = (counters || []).reduce((acc, c) => {
+      const logs = c.logs || [];
+      const todayLogs = logs.filter(l => l.timestamp >= today && l.increment > 0);
       return acc + todayLogs.reduce((sum, l) => sum + l.increment, 0);
     }, 0);
     return { totalCounts, countsToday };
@@ -75,15 +77,20 @@ const Dashboard: React.FC<DashboardProps> = ({ counters }) => {
 
     return last7Days.map(ts => {
       const date = new Date(ts);
-      const dayTotal = counters.reduce((acc, c) => {
-        const dayLogs = c.logs.filter(l => new Date(l.timestamp).setHours(0,0,0,0) === ts && l.increment > 0);
+      const dayTotal = (counters || []).reduce((acc, c) => {
+        const logs = c.logs || [];
+        const dayLogs = logs.filter(l => new Date(l.timestamp).setHours(0,0,0,0) === ts && l.increment > 0);
         return acc + dayLogs.reduce((sum, l) => sum + l.increment, 0);
       }, 0);
       return { name: date.toLocaleDateString('en-US', { weekday: 'short' }), value: dayTotal };
     });
   }, [counters]);
 
-  const topCounters = useMemo(() => [...counters].sort((a, b) => b.count - a.count).slice(0, 3), [counters]);
+  const topCounters = useMemo(() => {
+    return [...(counters || [])]
+      .sort((a, b) => (b.count || 0) - (a.count || 0))
+      .slice(0, 3);
+  }, [counters]);
 
   return (
     <motion.div 
