@@ -3,15 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "echo 'No build required for browser ESM'"
-  },
-  "dependencies": {
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
-    "lucide-react": "0.460.0",
-    "framer-motion": "11.11.17",
-    "recharts": "2.13.3",
-    "react-router-dom": "6.28.0",
-    "date-fns": "4.1.0"
+    "build": "echo 'Skipping build - using browser ESM'"
   }
 }

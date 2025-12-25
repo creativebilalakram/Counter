@@ -1,5 +1,7 @@
 {
   "version": 2,
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "installCommand": "echo 'Skipping install'",
+  "buildCommand": "echo 'Skipping build'"
 }
