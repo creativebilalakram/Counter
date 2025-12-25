@@ -2,21 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Ethereal Tally</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        slate: {
-                            950: '#020617',
-                        }
+                        slate: { 950: '#020617' }
+                    },
+                    fontFamily: {
+                        mono: ['"JetBrains Mono"', 'monospace'],
                     }
                 }
             }
@@ -24,51 +25,87 @@
     </script>
     <style>
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.7);
-            --glass-border: rgba(255, 255, 255, 0.3);
-            --bg-main: #fdfdfd;
+            --mesh-1: #ffedd5;
+            --mesh-2: #dbeafe;
+            --mesh-3: #f3e8ff;
+            --glass-bg: rgba(255, 255, 255, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --accent: #6366f1;
         }
 
         .dark {
-            --glass-bg: rgba(15, 23, 42, 0.7);
+            --mesh-1: #1e1b4b;
+            --mesh-2: #0f172a;
+            --mesh-3: #1e293b;
+            --glass-bg: rgba(15, 23, 42, 0.5);
             --glass-border: rgba(255, 255, 255, 0.08);
-            --bg-main: #020617;
+            --accent: #818cf8;
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
             overflow-x: hidden;
-            background: var(--bg-main);
-            transition: background-color 0.5s ease;
+            background: #fdfdfd;
+            transition: background 0.8s ease;
         }
-        
+
+        .dark body { background: #020617; }
+
+        /* Noise Texture Overlay */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0.03;
+            z-index: 9999;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3%3Ffilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        .mesh-bg {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1;
+            background: 
+                radial-gradient(at 0% 0%, var(--mesh-1) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, var(--mesh-2) 0px, transparent 50%),
+                radial-gradient(at 50% 100%, var(--mesh-3) 0px, transparent 50%);
+            filter: blur(100px);
+            opacity: 0.7;
+            animation: mesh-drift 20s ease-in-out infinite alternate;
+        }
+
+        @keyframes mesh-drift {
+            from { transform: scale(1) translate(0, 0); }
+            to { transform: scale(1.1) translate(20px, 20px); }
+        }
+
         .glass {
             background: var(--glass-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            backdrop-filter: blur(40px) saturate(160%);
+            -webkit-backdrop-filter: blur(40px) saturate(160%);
             border: 1px solid var(--glass-border);
-            transition: background-color 0.5s ease, border-color 0.5s ease;
         }
 
-        .spring-shadow {
-            box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1), 0 4px 12px -4px rgba(0, 0, 0, 0.05);
+        .premium-shadow {
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08);
+        }
+        .dark .premium-shadow {
+            box-shadow: 0 25px 60px -20px rgba(0, 0, 0, 0.4);
         }
 
-        .dark .spring-shadow {
-            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4);
+        .omni-button-glow {
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 
+                        0 20px 50px -10px rgba(0, 0, 0, 0.2),
+                        inset 0 1px 1px rgba(255, 255, 255, 0.2);
         }
 
-        .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        * { -webkit-tap-highlight-color: transparent; outline: none; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
     </style>
-<script type="importmap">
+    <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@19.0.0",
@@ -86,7 +123,8 @@
 }
 </script>
 </head>
-<body class="bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-500">
+<body class="transition-colors duration-700">
+    <div class="mesh-bg"></div>
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
 </body>

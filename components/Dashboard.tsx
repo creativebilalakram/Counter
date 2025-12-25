@@ -6,190 +6,135 @@ import {
   Flame, 
   BarChart3, 
   ChevronRight,
-  CirclePlay
+  Sparkles,
+  ArrowUpRight,
+  Target,
+  Zap
 } from 'lucide-react';
 import { Counter } from '../types.ts';
-import { AreaChart, Area, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 
 interface DashboardProps {
   counters: Counter[];
 }
 
-const ActivityRing = ({ progress, color, size = 120, strokeWidth = 12 }: { progress: number, color: string, size?: number, strokeWidth?: number }) => {
-  const radius = (size - strokeWidth) / 2;
-  const circumference = radius * 2 * Math.PI;
-  const offset = circumference - (Math.min(100, progress) / 100) * circumference;
-
-  return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="rotate-[-90deg]">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="currentColor"
-          strokeWidth={strokeWidth}
-          fill="transparent"
-          className="text-slate-100 dark:text-slate-800"
-        />
-        <motion.circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={color}
-          strokeWidth={strokeWidth}
-          fill="transparent"
-          strokeDasharray={circumference}
-          initial={{ strokeDashoffset: circumference }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 1, ease: "easeOut" }}
-          strokeLinecap="round"
-        />
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-xl font-bold text-slate-900 dark:text-white">{Math.round(progress || 0)}%</span>
-      </div>
-    </div>
-  );
-};
-
 const Dashboard: React.FC<DashboardProps> = ({ counters = [] }) => {
   const navigate = useNavigate();
   
   const stats = useMemo(() => {
-    const totalCounts = (counters || []).reduce((acc, c) => acc + (c.count || 0), 0);
+    const total = counters.reduce((acc, c) => acc + c.count, 0);
     const today = new Date().setHours(0,0,0,0);
-    const countsToday = (counters || []).reduce((acc, c) => {
-      const logs = c.logs || [];
-      const todayLogs = logs.filter(l => l.timestamp >= today && l.increment > 0);
-      return acc + todayLogs.reduce((sum, l) => sum + l.increment, 0);
+    const todayCount = counters.reduce((acc, c) => {
+      return acc + (c.logs || []).filter(l => l.timestamp >= today && l.increment > 0).reduce((sum, l) => sum + l.increment, 0);
     }, 0);
-    return { totalCounts, countsToday };
+    return { total, todayCount };
   }, [counters]);
 
-  const chartData = useMemo(() => {
-    const last7Days = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      return d.setHours(0,0,0,0);
-    }).reverse();
-
-    return last7Days.map(ts => {
-      const date = new Date(ts);
-      const dayTotal = (counters || []).reduce((acc, c) => {
-        const logs = c.logs || [];
-        const dayLogs = logs.filter(l => new Date(l.timestamp).setHours(0,0,0,0) === ts && l.increment > 0);
-        return acc + dayLogs.reduce((sum, l) => sum + l.increment, 0);
-      }, 0);
-      return { name: date.toLocaleDateString('en-US', { weekday: 'short' }), value: dayTotal };
-    });
+  const featured = useMemo(() => {
+    return counters.length > 0 ? counters[0] : null;
   }, [counters]);
 
-  const topCounters = useMemo(() => {
-    return [...(counters || [])]
-      .sort((a, b) => (b.count || 0) - (a.count || 0))
-      .slice(0, 3);
+  const secondary = useMemo(() => {
+    return counters.slice(1, 4);
   }, [counters]);
 
   return (
     <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-8"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-10 pb-20"
     >
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="flex-1 glass p-8 rounded-[32px] spring-shadow relative overflow-hidden">
-          <div className="absolute -top-12 -right-12 w-48 h-48 bg-slate-900/5 dark:bg-white/5 rounded-full blur-3xl" />
-          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Today's Pulse</p>
-          <div className="flex items-baseline gap-2 mb-6">
-            <h2 className="text-5xl font-bold text-slate-900 dark:text-white">{stats.countsToday}</h2>
-            <span className="text-slate-400 dark:text-slate-500 font-medium">counts</span>
+      <header className="flex flex-col gap-2">
+        <h1 className="text-5xl font-black text-slate-900 dark:text-white tracking-tight">Focus</h1>
+        <p className="text-slate-500 dark:text-slate-400 font-medium text-lg">Your momentum is building.</p>
+      </header>
+
+      {/* Bento Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-6">
+        
+        {/* Hero Card */}
+        <motion.div 
+          whileHover={{ y: -5 }}
+          className="md:col-span-4 lg:col-span-4 glass rounded-[48px] p-10 premium-shadow relative overflow-hidden group cursor-pointer"
+          onClick={() => featured && navigate(`/counter/${featured.id}`)}
+        >
+          <div className="absolute top-0 right-0 p-10">
+            <Sparkles className="text-slate-200 dark:text-slate-800 group-hover:text-indigo-400 transition-colors" size={48} />
           </div>
-          
-          <div className="h-[200px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0F172A" stopOpacity={0.1}/>
-                    <stop offset="95%" stopColor="#0F172A" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <Tooltip 
-                  contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)', backgroundColor: 'rgba(255,255,255,0.9)' }}
-                  itemStyle={{ color: '#0F172A' }}
-                />
-                <Area type="monotone" dataKey="value" stroke="currentColor" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" className="text-slate-900 dark:text-slate-100" />
-              </AreaChart>
-            </ResponsiveContainer>
+          <div className="relative z-10 flex flex-col h-full">
+            <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-[0.3em] mb-4">Prime Velocity</span>
+            <div className="flex items-baseline gap-4 mb-auto">
+              <h2 className="text-8xl font-black text-slate-900 dark:text-white tracking-tighter">{stats.todayCount}</h2>
+              <span className="text-slate-400 font-bold uppercase text-sm tracking-widest">today</span>
+            </div>
+            
+            <div className="h-32 w-full mt-12 -mx-10 translate-y-10">
+              <ResponsiveContainer width="110%" height="100%">
+                <AreaChart data={[{v:10}, {v:30}, {v:stats.todayCount/1.5}, {v:stats.todayCount}, {v:stats.todayCount*0.9}]}>
+                  <Area type="monotone" dataKey="v" stroke="#6366f1" strokeWidth={5} fill="url(#hero-grad)" fillOpacity={0.1} />
+                  <defs><linearGradient id="hero-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6366f1"/><stop offset="100%" stopColor="#6366f1" stopOpacity={0}/></linearGradient></defs>
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Vertical Stat Stack */}
+        <div className="md:col-span-2 lg:col-span-2 flex flex-col gap-6">
+          <div className="glass rounded-[40px] p-8 premium-shadow flex-1 flex flex-col justify-between group hover:bg-white dark:hover:bg-slate-800 transition-all">
+            <div className="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-500 flex items-center justify-center">
+              <Flame size={24} />
+            </div>
+            <div>
+              <p className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest mb-1">Consistency</p>
+              <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">12 <span className="text-lg text-slate-400 font-bold">Days</span></h3>
+            </div>
+          </div>
+          <div className="glass rounded-[40px] p-8 premium-shadow flex-1 flex flex-col justify-between group hover:bg-white dark:hover:bg-slate-800 transition-all">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+              <Zap size={24} />
+            </div>
+            <div>
+              <p className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest mb-1">Total Impact</p>
+              <h3 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">{stats.total.toLocaleString()}</h3>
+            </div>
           </div>
         </div>
 
-        <div className="md:w-80 glass p-8 rounded-[32px] spring-shadow flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-6">
-              <Trophy size={18} />
-              <span className="text-sm font-semibold uppercase tracking-widest">Achievements</span>
-            </div>
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-orange-50 dark:bg-orange-500/10 text-orange-500 flex items-center justify-center">
-                  <Flame size={24} />
-                </div>
-                <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Active Streak</p>
-                  <p className="text-lg font-bold text-slate-900 dark:text-white">12 Days</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-500/10 text-blue-500 flex items-center justify-center">
-                  <BarChart3 size={24} />
-                </div>
-                <div>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Lifetime Total</p>
-                  <p className="text-lg font-bold text-slate-900 dark:text-white">{stats.totalCounts.toLocaleString()}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="pt-8 mt-8 border-t border-slate-100 dark:border-slate-800">
-            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium italic">"Energy flows where attention goes."</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-4">
-        <h3 className="col-span-full text-xl font-bold text-slate-900 dark:text-white mt-4 flex items-center gap-2">
-          Focus Goals
-          <ChevronRight size={20} className="text-slate-300 dark:text-slate-600" />
-        </h3>
-        {topCounters.map((counter) => (
-          <motion.button 
+        {/* Small Progress Tiles */}
+        {secondary.map(counter => (
+          <motion.div
             key={counter.id}
-            whileHover={{ y: -5, scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            whileHover={{ scale: 1.02, y: -5 }}
             onClick={() => navigate(`/counter/${counter.id}`)}
-            className="glass p-6 rounded-[28px] spring-shadow flex items-center gap-6 text-left group transition-all"
+            className="md:col-span-2 lg:col-span-2 glass rounded-[40px] p-8 premium-shadow cursor-pointer group"
           >
-            <ActivityRing progress={counter.goal ? (counter.count / counter.goal) * 100 : 0} color={counter.color} size={80} strokeWidth={8} />
-            <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{counter.name}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-2 truncate">{counter.category}</p>
-              <div className="flex items-center justify-between text-sm">
-                <span className="font-bold text-slate-900 dark:text-white">{counter.count}</span>
-                <span className="text-slate-400 dark:text-slate-500">/ {counter.goal || '-'}</span>
+            <div className="flex justify-between items-start mb-6">
+              <div className="w-10 h-10 rounded-xl bg-slate-900 dark:bg-white flex items-center justify-center text-white dark:text-slate-900">
+                <Target size={18} />
               </div>
+              <ArrowUpRight className="text-slate-200 group-hover:text-indigo-500 transition-colors" size={20} />
             </div>
-          </motion.button>
+            <h4 className="font-black text-slate-900 dark:text-white mb-1 truncate">{counter.name}</h4>
+            <p className="text-xs text-slate-400 font-mono uppercase tracking-widest mb-4">{counter.count} {counter.goal ? `/ ${counter.goal}` : ''}</p>
+            <div className="w-full h-1 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+               <div className="h-full rounded-full" style={{ width: `${Math.min(100, counter.goal ? (counter.count/counter.goal)*100 : 0)}%`, backgroundColor: counter.color }} />
+            </div>
+          </motion.div>
         ))}
-        {topCounters.length === 0 && (
-          <button 
+
+        {/* Empty State / Add Tally */}
+        {counters.length < 4 && (
+          <motion.button 
+            whileHover={{ scale: 1.02 }}
             onClick={() => navigate('/counters')}
-            className="col-span-full py-12 flex flex-col items-center justify-center glass rounded-[32px] border-dashed border-2 border-slate-200 dark:border-slate-800 hover:border-indigo-400 transition-colors"
+            className="md:col-span-2 lg:col-span-2 rounded-[40px] border-2 border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-4 hover:border-indigo-400 transition-all group p-8"
           >
-             <CirclePlay size={48} className="text-slate-200 dark:text-slate-800 mb-4" />
-             <p className="text-slate-400 dark:text-slate-500 font-medium">No active counters. Create one to begin.</p>
-          </button>
+            <div className="w-14 h-14 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center text-slate-300 dark:text-slate-700 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-all">
+              <ChevronRight size={32} />
+            </div>
+            <span className="text-[10px] font-mono font-black uppercase tracking-widest text-slate-400">Expand Library</span>
+          </motion.button>
         )}
       </div>
     </motion.div>
