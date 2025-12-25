@@ -9,6 +9,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <script>
+        // Polyfill for libraries expecting process.env
+        window.process = { env: { NODE_ENV: 'production' } };
+        
         tailwind.config = {
             darkMode: 'class',
             theme: {
@@ -106,22 +109,22 @@
         .hide-scrollbar::-webkit-scrollbar { display: none; }
     </style>
     <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@19.0.0",
-    "react-dom": "https://esm.sh/react-dom@19.0.0",
-    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-    "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
-    "lucide-react": "https://esm.sh/lucide-react@0.460.0?external=react",
-    "framer-motion": "https://esm.sh/framer-motion@11.11.17?external=react,react-dom",
-    "recharts": "https://esm.sh/recharts@2.13.3?external=react,react-dom",
-    "react-router-dom": "https://esm.sh/react-router-dom@6.28.0?external=react,react-dom",
-    "date-fns": "https://esm.sh/date-fns@4.1.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/"
-  }
-}
-</script>
+    {
+      "imports": {
+        "react": "https://esm.sh/react@19.0.0",
+        "react/": "https://esm.sh/react@19.0.0/",
+        "react-dom": "https://esm.sh/react-dom@19.0.0",
+        "react-dom/": "https://esm.sh/react-dom@19.0.0/",
+        "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+        "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
+        "lucide-react": "https://esm.sh/lucide-react@0.460.0?external=react,react-dom",
+        "framer-motion": "https://esm.sh/framer-motion@11.11.17?external=react,react-dom",
+        "recharts": "https://esm.sh/recharts@2.13.3?external=react,react-dom",
+        "react-router-dom": "https://esm.sh/react-router-dom@6.28.0?external=react,react-dom",
+        "date-fns": "https://esm.sh/date-fns@4.1.0"
+      }
+    }
+    </script>
 </head>
 <body class="transition-colors duration-700">
     <div class="mesh-bg"></div>

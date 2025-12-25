@@ -13,9 +13,5 @@
     "recharts": "2.13.3",
     "react-router-dom": "6.28.0",
     "date-fns": "4.1.0"
-  },
-  "overrides": {
-    "react": "$react",
-    "react-dom": "$react-dom"
   }
 }
