@@ -1,8 +1,10 @@
-
 {
   "name": "ethereal-tally",
   "version": "0.0.0",
   "private": true,
+  "scripts": {
+    "build": "mkdir -p dist && cp -rv index.html index.tsx App.tsx types.ts metadata.json components hooks dist/"
+  },
   "dependencies": {
     "react": "19.0.0",
     "react-dom": "19.0.0",
