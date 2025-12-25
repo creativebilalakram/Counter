@@ -1,9 +1,9 @@
 {
   "name": "ethereal-tally",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "mkdir -p dist && cp -rv index.html index.tsx App.tsx types.ts metadata.json components hooks dist/"
+    "build": "echo 'No build required for ESM architecture'"
   },
   "dependencies": {
     "react": "19.0.0",

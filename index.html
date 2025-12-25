@@ -9,124 +9,86 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <script>
-        // Polyfill for libraries expecting process.env
+        // Critical Polyfill for ESM libraries
         window.process = { env: { NODE_ENV: 'production' } };
         
+        // Error Tracker to prevent silent blank screens
+        window.addEventListener('error', function(e) {
+            if (e.message.includes('Script error')) return;
+            const root = document.getElementById('root');
+            if (root && root.innerHTML === '') {
+                root.innerHTML = `<div style="padding: 40px; color: #ef4444; font-family: sans-serif;">
+                    <h1 style="font-weight: 900;">Application Error</h1>
+                    <p style="opacity: 0.7;">${e.message}</p>
+                    <button onclick="location.reload()" style="background: #000; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer;">Retry Loading</button>
+                </div>`;
+            }
+        });
+
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
-                    colors: {
-                        slate: { 950: '#020617' }
-                    },
-                    fontFamily: {
-                        mono: ['"JetBrains Mono"', 'monospace'],
-                    }
+                    colors: { slate: { 950: '#020617' } },
+                    fontFamily: { mono: ['"JetBrains Mono"', 'monospace'] }
                 }
             }
         }
     </script>
     <style>
         :root {
-            --mesh-1: #ffedd5;
-            --mesh-2: #dbeafe;
-            --mesh-3: #f3e8ff;
-            --glass-bg: rgba(255, 255, 255, 0.4);
-            --glass-border: rgba(255, 255, 255, 0.5);
-            --accent: #6366f1;
+            --mesh-1: #ffedd5; --mesh-2: #dbeafe; --mesh-3: #f3e8ff;
+            --glass-bg: rgba(255, 255, 255, 0.4); --glass-border: rgba(255, 255, 255, 0.5);
         }
-
         .dark {
-            --mesh-1: #1e1b4b;
-            --mesh-2: #0f172a;
-            --mesh-3: #1e293b;
-            --glass-bg: rgba(15, 23, 42, 0.5);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --accent: #818cf8;
+            --mesh-1: #1e1b4b; --mesh-2: #0f172a; --mesh-3: #1e293b;
+            --glass-bg: rgba(15, 23, 42, 0.5); --glass-border: rgba(255, 255, 255, 0.08);
         }
-
         body {
             font-family: 'Inter', -apple-system, system-ui, sans-serif;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
             overflow-x: hidden;
             background: #fdfdfd;
             transition: background 0.8s ease;
         }
-
         .dark body { background: #020617; }
-
-        /* Noise Texture Overlay */
         body::after {
-            content: "";
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            opacity: 0.03;
-            z-index: 9999;
-            pointer-events: none;
+            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0.03; z-index: 9999; pointer-events: none;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3%3Ffilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
-
         .mesh-bg {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            z-index: -1;
-            background: 
-                radial-gradient(at 0% 0%, var(--mesh-1) 0px, transparent 50%),
-                radial-gradient(at 100% 0%, var(--mesh-2) 0px, transparent 50%),
-                radial-gradient(at 50% 100%, var(--mesh-3) 0px, transparent 50%);
-            filter: blur(100px);
-            opacity: 0.7;
-            animation: mesh-drift 20s ease-in-out infinite alternate;
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1;
+            background: radial-gradient(at 0% 0%, var(--mesh-1) 0px, transparent 50%),
+                        radial-gradient(at 100% 0%, var(--mesh-2) 0px, transparent 50%),
+                        radial-gradient(at 50% 100%, var(--mesh-3) 0px, transparent 50%);
+            filter: blur(100px); opacity: 0.7; animation: mesh-drift 20s ease-in-out infinite alternate;
         }
-
-        @keyframes mesh-drift {
-            from { transform: scale(1) translate(0, 0); }
-            to { transform: scale(1.1) translate(20px, 20px); }
-        }
-
-        .glass {
-            background: var(--glass-bg);
-            backdrop-filter: blur(40px) saturate(160%);
-            -webkit-backdrop-filter: blur(40px) saturate(160%);
-            border: 1px solid var(--glass-border);
-        }
-
-        .premium-shadow {
-            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08);
-        }
-        .dark .premium-shadow {
-            box-shadow: 0 25px 60px -20px rgba(0, 0, 0, 0.4);
-        }
-
-        .omni-button-glow {
-            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 
-                        0 20px 50px -10px rgba(0, 0, 0, 0.2),
-                        inset 0 1px 1px rgba(255, 255, 255, 0.2);
-        }
-
+        @keyframes mesh-drift { from { transform: scale(1); } to { transform: scale(1.1) translate(20px, 20px); } }
+        .glass { background: var(--glass-bg); backdrop-filter: blur(40px) saturate(160%); border: 1px solid var(--glass-border); }
+        .premium-shadow { box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08); }
+        .dark .premium-shadow { box-shadow: 0 25px 60px -20px rgba(0, 0, 0, 0.4); }
         * { -webkit-tap-highlight-color: transparent; outline: none; }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
     </style>
     <script type="importmap">
-    {
-      "imports": {
-        "react": "https://esm.sh/react@19.0.0",
-        "react/": "https://esm.sh/react@19.0.0/",
-        "react-dom": "https://esm.sh/react-dom@19.0.0",
-        "react-dom/": "https://esm.sh/react-dom@19.0.0/",
-        "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-        "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
-        "lucide-react": "https://esm.sh/lucide-react@0.460.0?external=react,react-dom",
-        "framer-motion": "https://esm.sh/framer-motion@11.11.17?external=react,react-dom",
-        "recharts": "https://esm.sh/recharts@2.13.3?external=react,react-dom",
-        "react-router-dom": "https://esm.sh/react-router-dom@6.28.0?external=react,react-dom",
-        "date-fns": "https://esm.sh/date-fns@4.1.0"
-      }
-    }
-    </script>
+{
+  "imports": {
+    "react": "https://esm.sh/react@19.0.0",
+    "react-dom": "https://esm.sh/react-dom@19.0.0",
+    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
+    "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
+    "lucide-react": "https://esm.sh/lucide-react@0.460.0?external=react,react-dom,react/jsx-runtime",
+    "framer-motion": "https://esm.sh/framer-motion@11.11.17?external=react,react-dom,react/jsx-runtime",
+    "recharts": "https://esm.sh/recharts@2.13.3?bundle&external=react,react-dom,react/jsx-runtime",
+    "react-router-dom": "https://esm.sh/react-router-dom@6.28.0?external=react,react-dom,react/jsx-runtime",
+    "date-fns": "https://esm.sh/date-fns@4.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
+  }
+}
+</script>
 </head>
-<body class="transition-colors duration-700">
+<body>
     <div class="mesh-bg"></div>
     <div id="root"></div>
     <script type="module" src="./index.tsx"></script>
