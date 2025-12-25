@@ -1,21 +1,20 @@
-
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { History as HistoryIcon, Zap, Clock, TrendingUp } from 'lucide-react';
-import { Counter } from '../types';
+import { Counter } from '../types.ts';
 
 interface HistoryViewProps {
   counters: Counter[];
 }
 
-const HistoryView: React.FC<HistoryViewProps> = ({ counters }) => {
+const HistoryView: React.FC<HistoryViewProps> = ({ counters = [] }) => {
   const allSessions = useMemo(() => {
-    return counters.flatMap(c => 
-      c.sessions
+    return (counters || []).flatMap(c => 
+      (c.sessions || [])
         .filter(s => s.endTime) // Only show completed/active tracked sessions
         .map(s => {
-          const countInSession = (s.endValue ?? c.count) - s.startValue;
+          const countInSession = (s.endValue ?? (c.count || 0)) - s.startValue;
           return {
             ...s,
             counterName: c.name,

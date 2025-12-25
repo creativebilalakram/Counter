@@ -1,9 +1,8 @@
-
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Command, ArrowRight, Hash } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Counter } from '../types';
+import { Counter } from '../types.ts';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -11,14 +10,14 @@ interface CommandPaletteProps {
   counters: Counter[];
 }
 
-const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, counters }) => {
+const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, counters = [] }) => {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
 
   const results = useMemo(() => {
     if (!query) return [];
-    return counters
-      .filter(c => c.name.toLowerCase().includes(query.toLowerCase()))
+    return (counters || [])
+      .filter(c => (c.name || '').toLowerCase().includes(query.toLowerCase()))
       .slice(0, 5);
   }, [query, counters]);
 
@@ -73,7 +72,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, counte
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-lg font-black text-slate-900 dark:text-white">{c.count}</span>
+                  <span className="text-lg font-black text-slate-900 dark:text-white">{c.count || 0}</span>
                   <ArrowRight size={18} className="text-slate-200 dark:text-slate-700 group-hover:text-slate-900 dark:group-hover:text-white transition-colors" />
                 </div>
               </button>
@@ -85,7 +84,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, counte
           ) : (
             <div className="p-4 space-y-4">
                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-600 px-2">Recent Counters</p>
-               {counters.slice(0, 3).map(c => (
+               {(counters || []).slice(0, 3).map(c => (
                   <button
                     key={c.id}
                     onClick={() => {

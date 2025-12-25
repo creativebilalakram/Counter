@@ -1,6 +1,5 @@
-
 import { useState, useEffect, useCallback } from 'react';
-import { Counter, LogEntry, CounterSession } from '../types';
+import { Counter, LogEntry, CounterSession } from '../types.ts';
 
 const STORAGE_KEY = 'ethereal_tally_counters_v2';
 
@@ -52,18 +51,18 @@ export const useCounters = () => {
       isArchived: false,
       logs: [],
       sessions: [],
-      order: counters.length,
+      order: (counters || []).length,
       ...counter,
     };
-    setCounters(prev => [...prev, newCounter]);
-  }, [counters.length]);
+    setCounters(prev => [...(prev || []), newCounter]);
+  }, [counters]);
 
   const updateCounter = useCallback((id: string, updates: Partial<Counter>) => {
-    setCounters(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+    setCounters(prev => (prev || []).map(c => c.id === id ? { ...c, ...updates } : c));
   }, []);
 
   const deleteCounter = useCallback((id: string) => {
-    setCounters(prev => prev.filter(c => c.id !== id));
+    setCounters(prev => (prev || []).filter(c => c.id !== id));
   }, []);
 
   const clearAllData = useCallback(() => {
@@ -88,7 +87,7 @@ export const useCounters = () => {
   }, []);
 
   const resetCounter = useCallback((id: string) => {
-    setCounters(prev => prev.map(c => {
+    setCounters(prev => (prev || []).map(c => {
       if (c.id === id) {
         return {
           ...c,
@@ -106,9 +105,9 @@ export const useCounters = () => {
   }, []);
 
   const incrementCounter = useCallback((id: string, amount: number = 1) => {
-    setCounters(prev => prev.map(c => {
+    setCounters(prev => (prev || []).map(c => {
       if (c.id === id) {
-        const newValue = c.count + amount;
+        const newValue = (c.count || 0) + amount;
         const log: LogEntry = {
           id: generateId(),
           timestamp: Date.now(),
@@ -126,9 +125,9 @@ export const useCounters = () => {
   }, []);
 
   const decrementCounter = useCallback((id: string, amount: number = 1) => {
-    setCounters(prev => prev.map(c => {
+    setCounters(prev => (prev || []).map(c => {
       if (c.id === id) {
-        const newValue = Math.max(0, c.count - amount);
+        const newValue = Math.max(0, (c.count || 0) - amount);
         const log: LogEntry = {
           id: generateId(),
           timestamp: Date.now(),
@@ -146,14 +145,14 @@ export const useCounters = () => {
   }, []);
 
   const startSession = useCallback((id: string) => {
-    setCounters(prev => prev.map(c => {
+    setCounters(prev => (prev || []).map(c => {
       if (c.id === id) {
         if (c.activeSessionId) return c;
         const sessionId = generateId();
         const session: CounterSession = {
           id: sessionId,
           startTime: Date.now(),
-          startValue: c.count
+          startValue: c.count || 0
         };
         return {
           ...c,
@@ -166,14 +165,14 @@ export const useCounters = () => {
   }, []);
 
   const endSession = useCallback((id: string) => {
-    setCounters(prev => prev.map(c => {
+    setCounters(prev => (prev || []).map(c => {
       if (c.id === id && c.activeSessionId) {
         const sessions = (c.sessions || []).map(s => 
           s.id === c.activeSessionId 
             ? { 
                 ...s, 
                 endTime: Date.now(), 
-                endValue: c.count, 
+                endValue: c.count || 0, 
                 duration: Math.floor((Date.now() - s.startTime) / 1000) 
               } 
             : s
@@ -189,7 +188,7 @@ export const useCounters = () => {
   }, []);
 
   return {
-    counters,
+    counters: counters || [],
     addCounter,
     updateCounter,
     deleteCounter,

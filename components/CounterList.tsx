@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Hash } from 'lucide-react';
-import { Counter } from '../types';
+import { Counter } from '../types.ts';
 
 interface CounterCardProps {
   counter: Counter;
@@ -57,7 +56,7 @@ const CounterCard: React.FC<CounterCardProps> = ({
       <div className="mb-8">
         <h3 className="text-xl font-bold text-slate-900 dark:text-white truncate mb-1 tracking-tight">{counter.name}</h3>
         <p className="text-4xl font-black text-slate-900 dark:text-white tracking-tighter">
-          {counter.count.toLocaleString()}
+          {(counter.count || 0).toLocaleString()}
         </p>
       </div>
 
@@ -87,14 +86,14 @@ interface CounterListProps {
   onDelete: (id: string) => void;
 }
 
-const CounterList: React.FC<CounterListProps> = ({ counters, onIncrement, onDecrement, onDelete }) => {
+const CounterList: React.FC<CounterListProps> = ({ counters = [], onIncrement, onDecrement, onDelete }) => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'all' | 'health' | 'work' | 'personal'>('all');
 
-  const filteredCounters = counters.filter(c => {
+  const filteredCounters = (counters || []).filter(c => {
     if (c.isArchived) return false;
     if (activeTab === 'all') return true;
-    return c.category.toLowerCase() === activeTab;
+    return (c.category || '').toLowerCase() === activeTab;
   });
 
   return (
